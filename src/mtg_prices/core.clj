@@ -23,7 +23,8 @@
                         [avg-price] [[:td (html/nth-of-type 7)]]
                         [low-price] [[:td (html/nth-of-type 8)]]]
         {:rarity
-         (case (->> rarity html/text (re-find #"[CURM]"))
+         (case (->> rarity html/text (re-find #"[LCURM]"))
+           "L" :common
            "C" :common
            "U" :uncommon
            "R" :rare
