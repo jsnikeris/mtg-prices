@@ -13,6 +13,9 @@
    "Magic 2012 (M12)"
    "Innistrad"])
 
+(def booster-dist
+  {:token 1/2 :land 1 :common 10 :uncommon 3 :rare 7/8 :mythic 1/8})
+
 (defn extract-price [price-node]
   (->> price-node html/text (re-find #"\d+\.\d+") Double.))
 
@@ -28,10 +31,24 @@
           {:name card-name
            :rarity (if (re-find land-re card-name)
                      :land
-                     (case (->> rarity html/text (re-find #"[LCURM]"))
+                     (case (->> rarity html/text (re-find #"[CURMT]"))
                        "C" :common
                        "U" :uncommon
                        "R" :rare
-                       "M" :mythic))
+                       "M" :mythic
+                       "T" :token))
            :avg-price (extract-price avg-price)
            :low-price (extract-price low-price)}))))
+
+(defn rarity-avg [set rarity price-metric]
+  (let [prices (for [card set :when (= (:rarity card) rarity)]
+                 (price-metric card))]
+    (if (seq prices)
+      (/ (reduce + prices) (count prices))
+      0)))
+
+(defn booster-value [set-name price-metric]
+  (let [set (fetch-set set-name)]
+    (reduce +
+      (for [[rarity count] booster-dist]
+        (* count (rarity-avg set rarity price-metric))))))
