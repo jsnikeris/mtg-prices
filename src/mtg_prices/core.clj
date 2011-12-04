@@ -19,15 +19,19 @@
 (defn fetch-set [name]
   (-> (str guide-url (URLEncoder/encode name "utf-8")) URL. html/html-resource
       (html/select [[:table (html/nth-of-type 3)] :tr])
-      (html/let-select [[rarity]    [[:td (html/nth-of-type 5)]]
+      (html/let-select [[name]      [[:td (html/nth-of-type 1)]]
+                        [rarity]    [[:td (html/nth-of-type 5)]]
                         [avg-price] [[:td (html/nth-of-type 7)]]
                         [low-price] [[:td (html/nth-of-type 8)]]]
-        {:rarity
-         (case (->> rarity html/text (re-find #"[LCURM]"))
-           "L" :common
-           "C" :common
-           "U" :uncommon
-           "R" :rare
-           "M" :mythic)
-         :avg-price (extract-price avg-price)
-         :low-price (extract-price low-price)})))
+        (let [card-name (-> name html/text (str/replace " " ""))
+              land-re #"Swamp|Island|Forest|Mountain|Plains"]
+          {:name card-name
+           :rarity (if (re-find land-re card-name)
+                     :land
+                     (case (->> rarity html/text (re-find #"[LCURM]"))
+                       "C" :common
+                       "U" :uncommon
+                       "R" :rare
+                       "M" :mythic))
+           :avg-price (extract-price avg-price)
+           :low-price (extract-price low-price)}))))
